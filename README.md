@@ -1,5 +1,5 @@
 # spark-jms-connector
-A sample JMS connector for Spark streaming apps
+## Overview
 
 This library provides a minimal Spark-style wrapping around a JMS Receiver so that JMS messages can be easily consumed from Spark Streaming processes and stored to the Spark cluster with the desired storage level.  Messages are acknowledged to the broker upon succesful storage, but not if any processing exception prevents storage. This allows the JMS message broker to redeliver the message.
 
@@ -12,6 +12,7 @@ For example:
        JavaReceiverInputDStream<JMSValue<String>> msgstream = sc.receiverStream( receiver );
 ```
 
+## `JMSReceiver<Value>`
 The `JMSReceiver<V>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
 
 | Parameter | Description |
@@ -25,8 +26,10 @@ The `JMSReceiver<V>` constructor accepts all the necessary details to connect to
 
 The `JMSReceiver<V>` is a subclass of `org.apache.spark.streaming.receiver.Receiver`. It is designed to be passed into the `JavaStreamingContext.receiverStream( )` method to construct a `JavaReceiverInputDStream` for stream handling. The `JMSReceiver<V>` is passed a generic type parameter `V` representing the payload data type your streaming program deals with. Note however, that the resulting `JavaReceiverInputDStream` has a slightly different type parameter, `JMSValue<V>` wrapping your type parameter.
 
+## `JMSValue<V>`
 JMS Messages are marshalled into instances of your application's internal data type `V`, then wrapped in instances of `JMSValue<V>`. The `JMSValue` wrapper associates other useful JMS data with the payload, like the destination topic or queue the message was consumed from. But before the `JMSReceiver<V>` can contruct the `JMSValue<V>` instance, it needs to marshal the native JMS message payload into an instance of the desired value type `V`.
 
+## `JMSDeserializer<V>`
 To marshal message payloads into the target internal data type, the `JMSReceiver<V>` applies a `JMSDeserializer<V>` function to the message upon arrival. This `JMSDeserializer<V>` is passed into the `JMSReceiver<V>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is the desired type for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the input type parameter because it is only ever called within the `JMSReceiver<V>` instance.
 
 Here is an example String deserializer function:
