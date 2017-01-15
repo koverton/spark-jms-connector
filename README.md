@@ -15,6 +15,7 @@ For example:
 The `JMSReceiver<V>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
 
 | Parameter | Description |
+| --- | --- |
 | brokerUrl | Connection-string for the JMS broker; typicall a protocol and IP-address+port like 'http://localhost:8080' or 'smf://192.168.56.101' |
 | username | the username to authenticate to the JMS bus as |
 | password | the credentials for the above username |
