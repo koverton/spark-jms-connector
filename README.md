@@ -5,11 +5,17 @@ This library provides a minimal Spark-style wrapping around a JMS Receiver so th
 
 For example:
 ```java
-       JMSDeserializer<String> deserializer = JMSDeserializerFactory.createStringDeserializer();
-
-       Receiver<JMSValue<String>> receiver = new JMSReceiver(url, user, pass, topic, cfname, deserializer);
-
-       JavaReceiverInputDStream<JMSValue<String>> msgstream = sc.receiverStream( receiver );
+        final JavaReceiverInputDStream<JMSValue<String>> msgstream =
+                sc.receiverStream(
+                        new JMSReceiver(
+                                jmsBrokerURL,
+                                jmsUsername,
+                                jmsPassword,
+                                jmsTopicExpression,
+                                jmsConnectionFactory,
+                                JMSDeserializerFactory.createStringDeserializer()
+                        )
+                );
 ```
 
 ## `JMSReceiver<Value>`
