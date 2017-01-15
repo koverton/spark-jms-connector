@@ -4,8 +4,6 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.TextMessage;
 
-import static com.solacesystems.demo.JMSMessageUtility.toDest;
-
 /**
  * A sample JMS Deserializer implementation. JMS deserializers
  */
