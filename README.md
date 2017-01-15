@@ -13,6 +13,8 @@ For example:
 ```
 
 ## `JMSReceiver<Value>`
+The `JMSReceiver<V>` connects to a JMS bus, subscribes to the desired message destination and marshals incoming messages to the datatype your Spark Streaming application expects to use. Once a message has been successfully converted into the desired datatype, it is stored to the Spark cluster and the message is acknowledged to the JMS message bus.
+
 The `JMSReceiver<V>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
 
 | Parameter | Description |
