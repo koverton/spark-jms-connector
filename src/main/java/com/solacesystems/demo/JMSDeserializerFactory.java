@@ -19,9 +19,9 @@ public class JMSDeserializerFactory {
                 try {
                     if (msg instanceof TextMessage) {
                         TextMessage txtmsg = (TextMessage) msg;
-                        return new JMSValue<>(toDest(msg.getJMSDestination()), txtmsg.getText());
+                        return new JMSValue<>(msg.getJMSDestination(), txtmsg.getText());
                     }
-                    return new JMSValue<>(toDest(msg.getJMSDestination()), msg.toString());
+                    return new JMSValue<>(msg.getJMSDestination(), msg.toString());
                 }
                 catch(JMSException jmse) {
                     jmse.printStackTrace();
@@ -37,7 +37,7 @@ public class JMSDeserializerFactory {
 
             public JMSValue<Message> apply(Message msg) {
                 try {
-                    return new JMSValue<>(toDest(msg.getJMSDestination()), msg);
+                    return new JMSValue<>(msg.getJMSDestination(), msg);
                 }
                 catch(JMSException jmse) {
                     jmse.printStackTrace();

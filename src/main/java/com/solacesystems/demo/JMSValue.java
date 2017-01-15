@@ -1,5 +1,9 @@
 package com.solacesystems.demo;
 
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Queue;
+import javax.jms.Topic;
 import java.security.InvalidParameterException;
 
 /**
@@ -20,6 +24,26 @@ public final class JMSValue<V> implements scala.Serializable {
         if (destination == null) throw new InvalidParameterException("JMSDestination cannot be null");
         if (value == null) throw new InvalidParameterException("Value cannot be null");
         _dest = destination;
+        _val = value;
+    }
+
+    /**
+     * Constructs a JMSValue from a destination and value for internal consumption.
+     *
+     * @param destination the JMS destination (either Queue or Topic) this message was consumed from
+     * @param value the internal value after deserialization from the JMS Message payload for internal consumption
+     */
+    public JMSValue(Destination destination, V value) throws JMSException {
+        if (destination == null) throw new InvalidParameterException("JMSDestination cannot be null");
+        if (value == null) throw new InvalidParameterException("Value cannot be null");
+        if (destination instanceof Queue) {
+            Queue queue = (Queue) destination;
+            _dest = new JMSDestination(JMSDestination.DestinationType.QUEUE, queue.getQueueName());
+        }
+        else {
+            Topic topic = (Topic) destination;
+            _dest = new JMSDestination(JMSDestination.DestinationType.TOPIC, topic.getTopicName());
+        }
         _val = value;
     }
 
