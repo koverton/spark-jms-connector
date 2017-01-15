@@ -56,3 +56,12 @@ Here is an example String deserializer function:
             }
         };
 ```
+
+## A Note About `Serializable`
+Spark may move objects around the cluster, and in order to do that it may need to Serialize/Deserialize those objects. So the above classes implement Serializable where necessary. Beware that if you change internals of this library, things may compile just fine but will throw exceptions if Spark requires classes to be Serializable and you haven't supported that.
+
+Instances from this library that are Serializable:
+- `JMSDeserializer<Output>`
+- `JMSValue<V>`
+- `JMSDestination`
+- `JMSReceiver<V>` via inherited `Receiver<V>` class
