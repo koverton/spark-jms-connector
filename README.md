@@ -18,7 +18,7 @@ For example:
                 );
 ```
 
-## `JMSReceiver<ValueType>`
+## `JMSReceiver<ValueType>` Produces an Input data stream of `JMSValue<ValueType>`s
 The `JMSReceiver<ValueType>` connects to a JMS bus, subscribes to the desired message destination and marshals incoming messages to the datatype your Spark Streaming application expects to use. Once a message has been successfully converted into the desired datatype, it is stored to the Spark cluster and the message is acknowledged to the JMS message bus.
 
 The `JMSReceiver<ValueType>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
@@ -38,9 +38,9 @@ The `JMSReceiver<ValueType>` is a subclass of `org.apache.spark.streaming.receiv
 JMS Messages are marshalled into instances of your application's internal data type `ValueType`, then wrapped in instances of `JMSValue<ValueType>`. The `JMSValue` wrapper associates other useful JMS data with the payload, like the destination topic or queue the message was consumed from. But before the `JMSReceiver<ValueType>` can contruct the `JMSValue<ValueType>` instance, it needs to marshal the native JMS message payload into an instance of the desired value type `ValueType`.
 
 ## `JMSDeserializer<ValueType>`: `Message` -> `JMSValue<ValueType>`
-To marshal message payloads into the target internal data type, the `JMSReceiver<ValueType>` applies a `JMSDeserializer<ValueType>` function to the message upon arrival. This `JMSDeserializer<ValueType>` is passed into the `JMSReceiver<ValueType>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. 
+To marshal message payloads into the target internal data type, the `JMSReceiver<ValueType>` applies a `JMSDeserializer<ValueType>` function to the message upon arrival. This `JMSDeserializer<ValueType>` is passed into the `JMSReceiver<ValueType>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory` but writing deserialization logic will likely be the most significant code you write in order to leverage this connector library.
 
-Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is a `JMSValue<ValueType>` wrapping `ValueType`, the desired datatype for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the `JMSValue` wrapper and the input type parameter because it is only ever called within the `JMSReceiver<ValueType>` instance.
+Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is a `JMSValue<ValueType>` wrapping `ValueType`, the datatype produced by your deserialization logic for your Spark streaming application. The bulk of the logic is expected to be around converting the payload content from the inbound JMS Message into the desired `ValueType` instance, and wrapping it into a `JMSValue<ValueType>`.  A helper abstract class `JMSDeserializer<Output>` hides the `JMSValue` wrapper and the input type parameter because it is only ever called within the `JMSReceiver<ValueType>` instance.
 
 Here is an example String deserializer function:
 
@@ -63,7 +63,7 @@ Here is an example String deserializer function:
         };
 ```
 
-## A Note About `Serializable`
+## A Caution About `Serializable`
 Spark may move objects around the cluster, and in order to do that it may need to Serialize/Deserialize those objects. So the above classes implement Serializable where necessary. Beware that if you change internals of this library, things may compile just fine but will throw exceptions if Spark requires classes to be Serializable and you haven't supported that.
 
 Instances from this library that are Serializable:
@@ -71,3 +71,8 @@ Instances from this library that are Serializable:
 - `JMSValue<ValueType>`
 - `JMSDestination`
 - `JMSReceiver<ValueType>` via inherited `Receiver<ValueType>` class
+
+## TODO List
+The `JMSReceiver<ValueType>` internally sets the Spark StorageLevel to `MEMORY_ONLY_SER_2`. This should be parameterized to allow the user to choose.
+
+The `JMSValue` wrapper class only provides the JMS destination details; other info from the JMS Message could be made available in this wrapper too, like important header fields, timestamps, etc.
