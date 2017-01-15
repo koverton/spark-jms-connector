@@ -6,15 +6,14 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.apache.spark.streaming.receiver.Receiver;
 
 public class SimpleJMSStreamingTest
 {
-    static final String url    = "smf://192.168.56.101";
-    static final String user   = "test@poc_vpn";
-    static final String pass   = "whatever";
-    static final String cfname = "spark_cf";
-    static final JMSDestination queue = JMSDestination.newQueue("spark_queue");
+    static final String brokerURL = "smf://192.168.56.101";
+    static final String username = "test@poc_vpn";
+    static final String password = "whatever";
+    static final String connectionFactoryName = "spark_cf";
+    // static final JMSDestination queue = JMSDestination.newQueue("spark_queue");
     static final JMSDestination topic = JMSDestination.newTopic("spark/topic");
 
     public static void main( String[] args ) throws InterruptedException
@@ -24,14 +23,17 @@ public class SimpleJMSStreamingTest
                 .setAppName("Spark Streaming App");
         final JavaStreamingContext sc = new JavaStreamingContext(conf, Durations.seconds(1));
 
-        final JMSDeserializer<String> deserializer =
-                JMSDeserializerFactory.createStringDeserializer();
-
-        final Receiver<JMSValue<String>> receiver =
-                new JMSReceiver(url, user, pass, topic, cfname, deserializer);
-
         final JavaReceiverInputDStream<JMSValue<String>> msgstream =
-                sc.receiverStream( receiver );
+                sc.receiverStream(
+                        new JMSReceiver(
+                                brokerURL,
+                                username,
+                                password,
+                                topic,
+                                connectionFactoryName,
+                                JMSDeserializerFactory.createStringDeserializer()
+                        )
+                );
 
         msgstream.foreachRDD(new VoidFunction<JavaRDD<JMSValue<String>>>() {
             @Override
