@@ -45,9 +45,9 @@ Here is an example String deserializer function:
                 try {
                     if (msg instanceof TextMessage) {
                         TextMessage txtmsg = (TextMessage) msg;
-                        return new JMSValue<>(toDest(msg.getJMSDestination()), txtmsg.getText());
+                        return new JMSValue<>(msg.getJMSDestination(), txtmsg.getText());
                     }
-                    return new JMSValue<>(toDest(msg.getJMSDestination()), msg.toString());
+                    return new JMSValue<>(msg.getJMSDestination(), msg.toString());
                 }
                 catch(JMSException jmse) {
                     // ... up to you ...
