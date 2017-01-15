@@ -18,10 +18,10 @@ For example:
                 );
 ```
 
-## `JMSReceiver<Value>`
-The `JMSReceiver<V>` connects to a JMS bus, subscribes to the desired message destination and marshals incoming messages to the datatype your Spark Streaming application expects to use. Once a message has been successfully converted into the desired datatype, it is stored to the Spark cluster and the message is acknowledged to the JMS message bus.
+## `JMSReceiver<ValueType>`
+The `JMSReceiver<ValueType>` connects to a JMS bus, subscribes to the desired message destination and marshals incoming messages to the datatype your Spark Streaming application expects to use. Once a message has been successfully converted into the desired datatype, it is stored to the Spark cluster and the message is acknowledged to the JMS message bus.
 
-The `JMSReceiver<V>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
+The `JMSReceiver<ValueType>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
 
 | Parameter | Description |
 | --- | --- |
@@ -30,17 +30,17 @@ The `JMSReceiver<V>` constructor accepts all the necessary details to connect to
 | password | the credentials for the above username |
 | destination | the JMS topic or queue the `JMSReceiver` will consume messages from |
 | connection-factory | the name of the JMS connection-factory that will be used to create all JMS connections |
-| deserializer | an instance of abstract class `JMSDeserializer<V>` that is used to marshal the message payloads into the desired internal type `V`; more on that below |
+| deserializer | an instance of abstract class `JMSDeserializer<ValueType>` that is used to marshal the message payloads into the desired internal type `ValueType`; more on that below |
 
-The `JMSReceiver<V>` is a subclass of `org.apache.spark.streaming.receiver.Receiver`. It is designed to be passed into the `JavaStreamingContext.receiverStream( )` method to construct a `JavaReceiverInputDStream` for stream handling. The `JMSReceiver<V>` is passed a generic type parameter `V` representing the payload data type your streaming program deals with. Note however, that the resulting `JavaReceiverInputDStream` has a slightly different type parameter, `JMSValue<V>` wrapping your type parameter.
+The `JMSReceiver<ValueType>` is a subclass of `org.apache.spark.streaming.receiver.Receiver`. It is designed to be passed into the `JavaStreamingContext.receiverStream( )` method to construct a `JavaReceiverInputDStream` for stream handling. The `JMSReceiver<ValueType>` is passed a generic type parameter `ValueType` representing the payload data type your streaming program deals with. Note however, that the resulting `JavaReceiverInputDStream` has a slightly different type parameter, `JMSValue<ValueType>` wrapping your type parameter.
 
-## `JMSValue<V>`
-JMS Messages are marshalled into instances of your application's internal data type `V`, then wrapped in instances of `JMSValue<V>`. The `JMSValue` wrapper associates other useful JMS data with the payload, like the destination topic or queue the message was consumed from. But before the `JMSReceiver<V>` can contruct the `JMSValue<V>` instance, it needs to marshal the native JMS message payload into an instance of the desired value type `V`.
+## `JMSValue<ValueType>`
+JMS Messages are marshalled into instances of your application's internal data type `ValueType`, then wrapped in instances of `JMSValue<ValueType>`. The `JMSValue` wrapper associates other useful JMS data with the payload, like the destination topic or queue the message was consumed from. But before the `JMSReceiver<ValueType>` can contruct the `JMSValue<ValueType>` instance, it needs to marshal the native JMS message payload into an instance of the desired value type `ValueType`.
 
-## `JMSDeserializer<V>`: `Message` -> `JMSValue<V>`
-To marshal message payloads into the target internal data type, the `JMSReceiver<V>` applies a `JMSDeserializer<V>` function to the message upon arrival. This `JMSDeserializer<V>` is passed into the `JMSReceiver<V>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. 
+## `JMSDeserializer<ValueType>`: `Message` -> `JMSValue<ValueType>`
+To marshal message payloads into the target internal data type, the `JMSReceiver<ValueType>` applies a `JMSDeserializer<ValueType>` function to the message upon arrival. This `JMSDeserializer<ValueType>` is passed into the `JMSReceiver<ValueType>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. 
 
-Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is a `JMSValue<V>` wrapping `V`, the desired type for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the `JMSValue` wrapper and the input type parameter because it is only ever called within the `JMSReceiver<V>` instance.
+Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is a `JMSValue<ValueType>` wrapping `ValueType`, the desired datatype for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the `JMSValue` wrapper and the input type parameter because it is only ever called within the `JMSReceiver<ValueType>` instance.
 
 Here is an example String deserializer function:
 
@@ -68,6 +68,6 @@ Spark may move objects around the cluster, and in order to do that it may need t
 
 Instances from this library that are Serializable:
 - `JMSDeserializer<Output>`
-- `JMSValue<V>`
+- `JMSValue<ValueType>`
 - `JMSDestination`
-- `JMSReceiver<V>` via inherited `Receiver<V>` class
+- `JMSReceiver<ValueType>` via inherited `Receiver<ValueType>` class
