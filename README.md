@@ -31,8 +31,10 @@ The `JMSReceiver<V>` is a subclass of `org.apache.spark.streaming.receiver.Recei
 ## `JMSValue<V>`
 JMS Messages are marshalled into instances of your application's internal data type `V`, then wrapped in instances of `JMSValue<V>`. The `JMSValue` wrapper associates other useful JMS data with the payload, like the destination topic or queue the message was consumed from. But before the `JMSReceiver<V>` can contruct the `JMSValue<V>` instance, it needs to marshal the native JMS message payload into an instance of the desired value type `V`.
 
-## `JMSDeserializer<V>`
-To marshal message payloads into the target internal data type, the `JMSReceiver<V>` applies a `JMSDeserializer<V>` function to the message upon arrival. This `JMSDeserializer<V>` is passed into the `JMSReceiver<V>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is the desired type for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the input type parameter because it is only ever called within the `JMSReceiver<V>` instance.
+## `JMSDeserializer<V>`: `Message` -> `JMSValue<V>`
+To marshal message payloads into the target internal data type, the `JMSReceiver<V>` applies a `JMSDeserializer<V>` function to the message upon arrival. This `JMSDeserializer<V>` is passed into the `JMSReceiver<V>`'s constructor. Some samples of common deserialization routines are available in the `JMSDeserializerFactory`. 
+
+Deserializer functions are instances of Scala `Function1<T,R>` functors where the input type is always `javax.jms.Message` and the return type is a `JMSValue<V>` wrapping `V`, the desired type for your Spark streaming application. A helper abstract class `JMSDeserializer<Output>` hides the `JMSValue` wrapper and the input type parameter because it is only ever called within the `JMSReceiver<V>` instance.
 
 Here is an example String deserializer function:
 
