@@ -3,9 +3,15 @@ package com.solacesystems.demo;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.receiver.Receiver;
+
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.util.Hashtable;
 
 public class SimpleJMSStreamingTest
 {
@@ -23,17 +29,19 @@ public class SimpleJMSStreamingTest
                 .setAppName("Spark Streaming App");
         final JavaStreamingContext sc = new JavaStreamingContext(conf, Durations.seconds(1));
 
+        final JMSReceiver<String> receiver = new JMSReceiver<>(
+                StorageLevel.MEMORY_ONLY_SER_2(), JMSDeserializerFactory.createStringDeserializer());
+
+        final Hashtable<String, String> env = new Hashtable<>();
+        env.put(InitialContext.INITIAL_CONTEXT_FACTORY,
+                "com.solacesystems.jndi.SolJNDIInitialContextFactory");
+        env.put(InitialContext.PROVIDER_URL, brokerURL);
+        env.put(Context.SECURITY_PRINCIPAL, username);
+        env.put(Context.SECURITY_CREDENTIALS, password);
+
+        receiver.configure(env, connectionFactoryName, topic);
         final JavaReceiverInputDStream<JMSValue<String>> msgstream =
-                sc.receiverStream(
-                        new JMSReceiver(
-                                brokerURL,
-                                username,
-                                password,
-                                topic,
-                                connectionFactoryName,
-                                JMSDeserializerFactory.createStringDeserializer()
-                        )
-                );
+                sc.receiverStream(receiver);
 
         msgstream.foreachRDD(new VoidFunction<JavaRDD<JMSValue<String>>>() {
             @Override

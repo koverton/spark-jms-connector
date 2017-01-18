@@ -23,36 +23,36 @@ public class JMSReceiver<V> extends Receiver<JMSValue<V>> implements MessageList
             "com.solacesystems.jndi.SolJNDIInitialContextFactory";
 
     /**
-     * Constructor for the JMS receiver with all the info to connect to a JMS message-bus.
+     * Constructor for the JMS receiver with minimal spark storage info and type-directed serialization function.
      *
-     * @param brokerURL the URL of the JMS message-bus to connect to
-     * @param username the username to authenticate to the JMS message-bus with
-     * @param password the password for authentication to the JMS message-bus
-     * @param destination the JMS destination to consume messages from, either a Topic or Queue
-     * @param connectionFactory the JMS connection-factory defining how a JMS connection behaves
      * @param deserializer the deserializer applied to JMS messages as they arrive before storing them to Spark
      */
-    public JMSReceiver(String brokerURL, String username, String password,
-                       JMSDestination destination, String connectionFactory,
+    public JMSReceiver(StorageLevel storageLevel,
                        JMSDeserializer<V> deserializer) {
-        super(StorageLevel.MEMORY_ONLY_SER_2());
-        _url = brokerURL;
-        _userName = username;
-        _password = password;
-        _destination = destination;
-        _cfName = connectionFactory;
+        super(storageLevel);
         _deserializer = deserializer;
+    }
+
+    /**
+     * Configures the details around connecting to the JMS Message bus. the expected parameters to the JMS
+     * environment are variable according to the JMS platform being used. Some typical parameters can include
+     * <li> the URL of the JMS message-bus to connect to</li>
+     * <li> the username to authenticate to the JMS message-bus with</li>
+     * <li> the password for authentication to the JMS message-bus</li>
+     * @param jmsEnvironment a hashtable containing all the properties for initialization of the JMS platform;
+     * @param connectionFactory the JMS connection-factory defining how a JMS connection behaves
+     * @param destination the topic or queue to consume messages from
+     */
+    public void configure(Hashtable<String, String> jmsEnvironment, String connectionFactory, JMSDestination destination) {
+        _jmsEnv = jmsEnvironment;
+        _cfName = connectionFactory;
+        _destination = destination;
     }
 
     @Override
     public void onStart() {
-        Hashtable<String, String> env = new Hashtable<>();
-        env.put(InitialContext.INITIAL_CONTEXT_FACTORY, SOLJMS_INITIAL_CONTEXT_FACTORY);
-        env.put(InitialContext.PROVIDER_URL, _url);
-        env.put(Context.SECURITY_PRINCIPAL, _userName);
-        env.put(Context.SECURITY_CREDENTIALS, _password);
         try {
-            Context ctx = new InitialContext(env);
+            Context ctx = new InitialContext(_jmsEnv);
             ConnectionFactory factory = (ConnectionFactory) ctx.lookup(_cfName);
             _connection = factory.createConnection();
             Session session = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
@@ -90,10 +90,8 @@ public class JMSReceiver<V> extends Receiver<JMSValue<V>> implements MessageList
         }
     }
 
+    private Hashtable<String, String> _jmsEnv;
     private String _cfName;
-    private String _url;
-    private String _userName;
-    private String _password;
     private JMSDestination _destination;
     private Connection _connection;
     private JMSDeserializer<V> _deserializer;
