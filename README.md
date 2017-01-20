@@ -5,32 +5,50 @@ This library provides a minimal Spark-style wrapping around a JMS Receiver so th
 
 For example:
 ```java
-        final JavaReceiverInputDStream<JMSValue<String>> msgstream =
-                sc.receiverStream(
-                        new JMSReceiver(
-                                jmsBrokerURL,
-                                jmsUsername,
-                                jmsPassword,
-                                jmsTopicExpression,
-                                jmsConnectionFactory,
-                                JMSDeserializerFactory.createStringDeserializer()
-                        )
-                );
+        final JMSReceiver<String> receiver = new JMSReceiver<>(
+                StorageLevel.MEMORY_ONLY_SER_2(), JMSDeserializerFactory.createStringDeserializer()
+	);
+
+        final Hashtable<String, String> env = new Hashtable<>();
+        env.put(InitialContext.INITIAL_CONTEXT_FACTORY,
+                "com.solacesystems.jndi.SolJNDIInitialContextFactory");
+        env.put(InitialContext.PROVIDER_URL, brokerURL);
+        env.put(Context.SECURITY_PRINCIPAL, username);
+        env.put(Context.SECURITY_CREDENTIALS, password);
+
+        receiver.configure(env, connectionFactoryName, topic);
+        final JavaReceiverInputDStream<JMSValue<String>> msgstream = sc.receiverStream(receiver);
 ```
 
 ## `JMSReceiver<ValueType>` Produces an Input Data Stream of `JMSValue<ValueType>`
 The `JMSReceiver<ValueType>` connects to a JMS bus, subscribes to the desired message destination and marshals incoming messages to the datatype your Spark Streaming application expects to use. Once a message has been successfully converted into the desired datatype, it is stored to the Spark cluster and the message is acknowledged to the JMS message bus.
 
-The `JMSReceiver<ValueType>` constructor accepts all the necessary details to connect to a standard JMS message bus; it expects to use a JNDI `InitialContext` based upon these details to lookup a JMS `ConnectionFactory` which is used to create a JMS `Connection`. These details are as follows:
+### Constructor
+The `JMSReceiver<ValueType>` constructor accepts the following parameters:
+| Parameter | Description |
+| --- | --- |
+| storageLevel | The Spark storage-level for this particular instance
+| deserializer | an instance of abstract class `JMSDeserializer<ValueType>` that is used to marshal the message payloads into the desired internal type `ValueType`; more on that below |
+
+This constructs the object in the Spark runtime.
+
+### Configure
+The `configure` function is where you configure the particular JMS bus you want to connect to. In particular, a Hashtable of properties for the preferred platform `javax.naming.InitialContext` construction must be populated and passed in as the first parameter, along with the JNDI name of a JMS connection-factory to look up for the connection, and a JMSDestination the `JMSReciever` will consume messages from. 
 
 | Parameter | Description |
 | --- | --- |
-| brokerUrl | Connection-string for the JMS broker; typicall a protocol and IP-address+port like 'http://localhost:8080' or 'smf://192.168.56.101' |
-| username | the username to authenticate to the JMS bus as |
-| password | the credentials for the above username |
-| destination | the JMS topic or queue the `JMSReceiver` will consume messages from |
-| connection-factory | the name of the JMS connection-factory that will be used to create all JMS connections |
-| deserializer | an instance of abstract class `JMSDeserializer<ValueType>` that is used to marshal the message payloads into the desired internal type `ValueType`; more on that below |
+| jmsEnvironment | Configures the details around connecting to the JMS Message bus. |
+| connectionFactory | Name of the JMS connection-factory defining how a JMS connection behaves; this is instantiated by the `InitialContext` and used to create connections. |
+| destination | The destination to consume messages from; can be a Topic (non-persistent) or a Queue (persistent). |
+
+The most significant configuration work is to populate the property-map for the JNDI InitialContext. That is what is used to connect to a JNDI store, look up your configured Connection-Factory, and use that to create a new JMS `Connection` to the message bus. The necessary details to connect to a standard JMS message bus can vary; some common details are as follows:
+
+| Key | Value |
+| --- | --- |
+| InitialContext.PROVIDER_URL | Connection-string for the JMS broker; typicall a protocol and IP-address+port like 'http://localhost:8080' or 'smf://192.168.56.101' |
+| Context.SECURITY_PRINCIPAL | The username to authenticate to the JMS bus as |
+| Context.SECURITY_CREDENTIALS | The password for the above username |
+| Other Params | JMS buses may vary, so it is possible that other `InitialContext` parameters are required; consult your JMS bus documentation. |
 
 The `JMSReceiver<ValueType>` is a subclass of `org.apache.spark.streaming.receiver.Receiver`. It is designed to be passed into the `JavaStreamingContext.receiverStream( )` method to construct a `JavaReceiverInputDStream` for stream handling. The `JMSReceiver<ValueType>` is passed a generic type parameter `ValueType` representing the payload data type your streaming program deals with. Note however, that the resulting `JavaReceiverInputDStream` has a slightly different type parameter, `JMSValue<ValueType>` wrapping your type parameter.
 
